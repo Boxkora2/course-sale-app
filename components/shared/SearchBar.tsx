@@ -17,28 +17,22 @@ export function SearchBar({
   compact = false,
 }: SearchBarProps) {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<typeof courses>([]);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    if (query.length < 2) {
-      setSuggestions([]);
-      setOpen(false);
-      return;
-    }
-    const q = query.toLowerCase();
-    const results = courses
-      .filter(
-        (c) =>
-          c.title.toLowerCase().includes(q) ||
-          c.tags.some((t) => t.toLowerCase().includes(q))
-      )
-      .slice(0, 5);
-    setSuggestions(results);
-    setOpen(results.length > 0);
-  }, [query]);
+  // Derive suggestions during render — no effect needed (rerender-derived-state-no-effect)
+  const q = query.toLowerCase();
+  const suggestions =
+    query.length >= 2
+      ? courses
+          .filter(
+            (c) =>
+              c.title.toLowerCase().includes(q) ||
+              c.tags.some((t) => t.toLowerCase().includes(q))
+          )
+          .slice(0, 5)
+      : [];
 
   // Close on outside click
   useEffect(() => {
@@ -72,7 +66,7 @@ export function SearchBar({
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setOpen(e.target.value.length >= 2); }}
             placeholder={placeholder}
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
