@@ -7,10 +7,10 @@ import { SearchBar } from "@/components/shared/SearchBar";
 import { siteConfig } from "@/config/site";
 
 const floatingBadges = [
-  { icon: Star,     label: "4.9 Avg Rating", color: "#f59e0b", x: "8%",  y: "20%" },
-  { icon: Users,    label: "50K+ Students",  color: "#7c3aed", x: "88%", y: "30%" },
-  { icon: BookOpen, label: "200+ Courses",   color: "#06b6d4", x: "85%", y: "68%" },
-  { icon: Award,    label: "Certified",      color: "#10b981", x: "5%",  y: "72%" },
+  { icon: Star,     label: "4.9 Avg Rating", color: "#f59e0b", x: "8%",  y: "20%", animDuration: 3.2, animDelay: 0   },
+  { icon: Users,    label: "50K+ Students",  color: "#7c3aed", x: "88%", y: "30%", animDuration: 4.0, animDelay: 0.6 },
+  { icon: BookOpen, label: "200+ Courses",   color: "#06b6d4", x: "85%", y: "68%", animDuration: 3.6, animDelay: 1.2 },
+  { icon: Award,    label: "Certified",      color: "#10b981", x: "5%",  y: "72%", animDuration: 4.4, animDelay: 1.8 },
 ];
 
 export function HeroSection() {
@@ -42,10 +42,10 @@ export function HeroSection() {
             style={{ left: badge.x, top: badge.y }}
             animate={{ y: [0, -8, 0] }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: badge.animDuration,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: Math.random() * 2,
+              delay: badge.animDelay,
             }}
           >
             <Icon className="h-3.5 w-3.5" style={{ color: badge.color }} />
