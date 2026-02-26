@@ -7,28 +7,25 @@ import { Trash2, ShoppingCart, ArrowRight, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { courses } from "@/data/courses";
 import { formatPrice } from "@/lib/utils";
-
-// Mock cart data — TODO: Replace with cart context / store
-const defaultCartItems = [courses[0], courses[1], courses[2]];
+import { useCartStore } from "@/store/useCartStore";
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState(defaultCartItems);
-  const [coupon, setCoupon]       = useState("");
-  const [discount, setDiscount]   = useState(0);
+  const { items: cartItems, discount, couponCode, removeItem, applyCoupon } = useCartStore();
+  const [coupon, setCoupon] = useState(couponCode);
+  const [couponMsg, setCouponMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   const subtotal = cartItems.reduce((sum, c) => sum + c.price, 0);
   const total = Math.max(0, subtotal - discount);
 
-  const removeItem = (id: string) =>
-    setCartItems((prev) => prev.filter((c) => c.id !== id));
-
-  const applyCoupon = () => {
-    if (coupon.toUpperCase() === "NEXLEARN20") {
-      setDiscount(subtotal * 0.2);
+  const handleApplyCoupon = () => {
+    applyCoupon(coupon);
+    const applied = useCartStore.getState().couponCode;
+    const codeUpper = coupon.trim().toUpperCase();
+    if (applied === codeUpper) {
+      setCouponMsg({ text: "Coupon applied! 🎉", ok: true });
     } else {
-      alert("Invalid coupon code");
+      setCouponMsg({ text: "Invalid coupon code", ok: false });
     }
   };
 
@@ -134,19 +131,25 @@ export default function CartPage() {
               <Input
                 placeholder="Coupon code"
                 value={coupon}
-                onChange={(e) => setCoupon(e.target.value)}
+                onChange={(e) => { setCoupon(e.target.value); setCouponMsg(null); }}
                 className="h-9 text-sm bg-secondary/50 border-border/50"
               />
               <Button
                 size="sm"
                 variant="outline"
                 className="shrink-0 border-primary/50 text-primary hover:bg-primary/10"
-                onClick={applyCoupon}
+                onClick={handleApplyCoupon}
               >
                 <Tag className="h-3.5 w-3.5 mr-1" /> Apply
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground">Try: NEXLEARN20 for 20% off</p>
+            {couponMsg ? (
+              <p className={`text-[11px] ${couponMsg.ok ? "text-[#10b981]" : "text-destructive"}`}>
+                {couponMsg.text}
+              </p>
+            ) : (
+              <p className="text-[10px] text-muted-foreground">Try: NEXLEARN20 for 20% off</p>
+            )}
 
             <Button
               className="w-full h-11 bg-gradient-to-r from-[#7c3aed] to-[#06b6d4] text-white border-0 font-semibold shadow-[0_0_20px_var(--glow-primary)]"

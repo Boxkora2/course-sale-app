@@ -7,24 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { courses } from "@/data/courses";
 import { formatPrice } from "@/lib/utils";
-
-const cartItems = [courses[0], courses[1]];
+import { useCartStore } from "@/store/useCartStore";
 
 export default function CheckoutPage() {
-  const [coupon, setCoupon]     = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [success, setSuccess]   = useState(false);
+  const { items: cartItems, discount, applyCoupon, clearCart } = useCartStore();
+  const [coupon, setCoupon] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const subtotal = cartItems.reduce((s, c) => s + c.price, 0);
   const total    = Math.max(0, subtotal - discount);
-
-  const applyCoupon = () => {
-    if (coupon.toUpperCase() === "NEXLEARN20") {
-      setDiscount(subtotal * 0.2);
-    }
-  };
 
   if (success) {
     return (
@@ -169,7 +161,7 @@ export default function CheckoutPage() {
               size="sm"
               variant="outline"
               className="shrink-0 border-primary/50 text-primary hover:bg-primary/10"
-              onClick={applyCoupon}
+              onClick={() => applyCoupon(coupon)}
             >
               <Tag className="h-3.5 w-3.5 mr-1" /> Apply
             </Button>
@@ -199,7 +191,7 @@ export default function CheckoutPage() {
 
           <Button
             className="w-full h-12 bg-gradient-to-r from-[#7c3aed] to-[#06b6d4] text-white border-0 font-semibold shadow-[0_0_20px_var(--glow-primary)] text-base"
-            onClick={() => setSuccess(true)}
+            onClick={() => { setSuccess(true); clearCart(); }}
           >
             <Lock className="h-4 w-4 mr-2" />
             Place Order

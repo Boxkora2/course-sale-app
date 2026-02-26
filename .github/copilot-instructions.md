@@ -1,7 +1,7 @@
 # GitHub Copilot Instructions — NexLearn
 
 ## Project Overview
-**NexLearn** is a futuristic course-sale platform built with Next.js 15 (App Router), TypeScript, Tailwind CSS v4, and shadcn/ui. The app sells online courses across 8 tech categories. All data is currently mocked in `/data` — backend/API integration is a future concern.
+**NexLearn** is a futuristic course-sale platform built with Next.js 16 (App Router), TypeScript, Tailwind CSS v4, and shadcn/ui. The app sells online courses across 8 tech categories. All data is currently mocked in `/data` — backend/API integration is a future concern.
 
 ---
 
@@ -15,36 +15,84 @@
 | Animations | Framer Motion |
 | Icons | lucide-react |
 | Theming | next-themes (`attribute="class"`, default `"dark"`) |
+| State Management | Zustand 5 + `persist` middleware |
 | Package Manager | pnpm |
 | Toasts | sonner |
+| Testing | Vitest 4 |
 
 ---
 
 ## Project Structure
 ```
-app/                    # Next.js App Router pages
-  (auth)/login|register # Auth pages
-  courses/[slug]/       # Dynamic course detail
-  cart/ checkout/       # Purchase flow
-  dashboard/            # User dashboard
-  search/               # Search results
+app/                      # Next.js App Router pages
+  (auth)/login|register   # Auth pages (mock validation, TODO: wire Auth.js)
+  courses/
+    loading.tsx           # Skeleton grid shown during suspense
+    error.tsx             # Error boundary with retry button
+    page.tsx              # Course catalogue with filters
+    [slug]/
+      loading.tsx         # Course detail skeleton
+      page.tsx            # Dynamic course detail
+  cart/page.tsx           # Cart — reads from useCartStore
+  checkout/page.tsx       # Checkout — reads from useCartStore, clears on order
+  dashboard/page.tsx
+  search/page.tsx
 components/
-  course/               # CourseCard and course-specific UI
-  home/                 # Landing page sections
-  layout/               # Navbar, Footer, MobileMenu
-  shared/               # Reusable: SearchBar, RatingStars, CourseBadge, ThemeToggle, ProgressBar
-  ui/                   # shadcn/ui primitives (accordion, avatar, badge, button, card, dialog, input, etc.)
+  course/
+    CourseCard.tsx        # Server-safe card (no store access)
+    AddToCartButton.tsx   # "use client" — reads/writes useCartStore
+  home/                   # Landing page sections
+  layout/
+    Navbar.tsx            # Cart badge count from useCartStore
+    Footer.tsx
+    MobileMenu.tsx
+  shared/                 # SearchBar, RatingStars, CourseBadge, ThemeToggle, ProgressBar
+  ui/                     # shadcn/ui primitives — DO NOT EDIT
 config/
-  site.ts               # Site name, description, stats — edit here to rebrand
-  navigation.ts         # All nav items and footer links
+  site.ts                 # Site name, description, stats — edit here to rebrand
+  navigation.ts           # All nav items and footer links
 data/
-  courses.ts            # Mock course data + types (Course, Section, Lesson)
-  instructors.ts        # Mock instructor data
-  categories.ts         # Category data
-  testimonials.ts       # Testimonial data
+  courses.ts              # Mock course data + types (Course, Section, Lesson)
+  instructors.ts          # Mock instructor data
+  categories.ts           # Category data
+  testimonials.ts         # Testimonial data
 lib/
-  utils.ts              # cn(), formatPrice(), formatNumber(), truncate(), getInitials()
+  utils.ts                # cn(), formatPrice(), formatNumber(), truncate(), getInitials()
+  utils.test.ts           # Vitest unit tests for utils
+store/
+  useCartStore.ts         # Zustand cart store (persisted to localStorage)
 ```
+
+---
+
+## Cart State (Zustand)
+
+The cart is managed by `store/useCartStore.ts` using Zustand with `persist` middleware.
+
+```ts
+import { useCartStore } from "@/store/useCartStore";
+
+// Reading state
+const { items, discount } = useCartStore();
+const count = useCartStore((s) => s.items.length);  // optimized selector
+
+// Actions
+addItem(course)     // prevents duplicates automatically
+removeItem(id)
+clearCart()         // called after successful checkout
+applyCoupon(code)   // NEXLEARN20 = 20%, NEXLEARN10 = 10%
+removeCoupon()
+
+// Derived helpers (call as functions)
+subtotal()          // sum of item prices
+total()             // subtotal minus discount
+```
+
+**Rules:**
+- `useCartStore` can only be called inside `"use client"` components
+- Pages/layouts that are RSC must receive cart data via props from a client wrapper
+- `persist` key is `"nexlearn-cart"` — stored in `localStorage`
+- Never duplicate cart logic in component local state — always use the store
 
 ---
 
@@ -79,6 +127,7 @@ style={{ background: "#0a0a0f" }}
 - Pages and layout sections are **Server Components** by default
 - Add `"use client"` only when using hooks, event handlers, or framer-motion
 - Framer Motion components (`motion.div`, etc.) always require `"use client"`
+- Zustand store hooks always require `"use client"`
 
 ### New Components
 - Place in the most specific folder (`components/home/`, `components/course/`, etc.)
@@ -90,6 +139,40 @@ style={{ background: "#0a0a0f" }}
 - Always type component props with an interface
 - Import data types from `@/data/courses`, `@/data/instructors`, etc.
 - Use `React.ComponentProps<typeof X>` to extend shadcn component props
+- **Never use `any`** — derive types from libraries: `type Opts = NonNullable<Parameters<typeof fn>[1]>`
+
+### Framer Motion — hydration safety
+Never use `Math.random()` inside `transition` or `animate` props — values differ between server and client causing hydration errors. Pre-seed all random-looking values in the static data array:
+```tsx
+// ✅ correct — stable across server and client
+const items = [
+  { label: "A", animDelay: 0,   animDuration: 3.2 },
+  { label: "B", animDelay: 0.6, animDuration: 4.0 },
+];
+// ❌ wrong — causes hydration mismatch
+transition={{ delay: Math.random() * 2 }}
+```
+
+---
+
+## Loading & Error Pages
+
+Every route that fetches data **must** have a `loading.tsx` and `error.tsx` sibling:
+
+```tsx
+// app/some-route/loading.tsx — skeleton UI
+export default function Loading() {
+  return <div className="animate-pulse ..." />;
+}
+
+// app/some-route/error.tsx — must be "use client"
+"use client";
+export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+  return <button onClick={reset}>Try again</button>;
+}
+```
+
+Currently implemented: `app/courses/loading.tsx`, `app/courses/error.tsx`, `app/courses/[slug]/loading.tsx`.
 
 ---
 
@@ -124,6 +207,24 @@ getInstructorById(id: string): Instructor | undefined
 ```
 
 When adding new data-fetching logic, keep it in the data files and mark it with a `// TODO` comment for future API replacement.
+
+---
+
+## Testing (Vitest)
+
+- Config: `vitest.config.ts` — Node environment, `@` alias resolved
+- Tests live alongside source: `lib/utils.test.ts`
+- Run: `pnpm test:run` (single pass) or `pnpm test` (watch mode)
+- When adding a new utility function to `lib/utils.ts`, add corresponding tests in `lib/utils.test.ts`
+
+```ts
+import { describe, it, expect } from "vitest";
+import { formatPrice } from "./utils";
+
+describe("formatPrice", () => {
+  it("returns Free for 0", () => expect(formatPrice(0)).toBe("Free"));
+});
+```
 
 ---
 
@@ -173,11 +274,18 @@ When adding new data-fetching logic, keep it in the data files and mark it with 
 | `/` | Home (all sections) |
 | `/courses` | Course catalogue with filters |
 | `/courses/[slug]` | Course detail |
-| `/cart` | Shopping cart |
-| `/checkout` | Checkout form |
+| `/cart` | Shopping cart (Zustand state) |
+| `/checkout` | Checkout — clears cart on success |
 | `/dashboard` | User dashboard |
 | `/search?q=` | Search results |
-| `/login`, `/register` | Auth pages |
+| `/login`, `/register` | Auth pages (mock, TODO: Auth.js) |
+
+---
+
+## CI / Quality
+- GitHub Actions: `.github/workflows/ci.yml` — runs `pnpm lint` + `tsc --noEmit` on every push and PR
+- Always run `pnpm test:run` before committing to ensure utils tests pass
+- TypeScript strict mode is on — no `any`, no unchecked indexing
 
 ---
 
@@ -190,6 +298,8 @@ When adding new data-fetching logic, keep it in the data files and mark it with 
 - Use `text-muted-foreground` for secondary text
 - Use `border-border/50` for subtle borders
 - Wrap client-only sections in their own component to keep pages as RSC
+- Add `loading.tsx` + `error.tsx` to every new data-fetching route
+- Pre-seed animation values — never `Math.random()` inside JSX props
 
 **Don't:**
 - Hardcode dark-mode colors (`#0a0a0f`, `#0f0f1a`, `rgba(15,15,26,...)`)
@@ -197,4 +307,55 @@ When adding new data-fetching logic, keep it in the data files and mark it with 
 - Add `"use client"` to page files unless absolutely necessary
 - Modify files in `components/ui/` (shadcn managed)
 - Install new animation libraries — use Framer Motion
-- Use `any` type
+- Use `any` type — derive types from library signatures instead
+- Store cart state in component local state — always use `useCartStore`
+
+
+---
+
+## Agent Skills
+The following skills are installed in `.github/instructions/` and apply automatically:
+
+### `vercel-react-best-practices`
+**Apply when:** writing/refactoring any component, page, or data-fetching logic in NexLearn.
+Key rules relevant to this project:
+- `async-parallel`  when course detail page fetches course + instructor data, use `Promise.all()`
+- `async-suspense-boundaries`  wrap course sections in `<Suspense>` with appropriate fallbacks (`loading.tsx` already covers route level)
+- `bundle-barrel-imports`  import from `@/lib/utils` directly, avoid re-exporting everything from an index
+- `bundle-dynamic-imports`  use `next/dynamic` for heavy Framer Motion sections if bundle grows
+- `bundle-defer-third-party`  defer `@vercel/analytics` until after hydration
+- `server-cache-react`  use `React.cache()` when adding real API calls to `getCourseBySlug`, `getFeaturedCourses`
+- `server-parallel-fetching`  restructure pages to parallel-fetch independent data (courses + instructors)
+- `server-serialization`  minimize data passed from RSC to client components (don't pass full Course objects when only id/title needed)
+- `rerender-memo`  memoize `CourseCard` in large lists; use `useCartStore((s) => s.items.length)` selector (already correct)
+- `rerender-derived-state-no-effect`  derive cart totals during render via `subtotal()` / `total()`, not in effects
+- `rerender-functional-setstate`  use functional form in Zustand setters (already applied in `useCartStore.ts`)
+- `rendering-conditional-render`  use ternary instead of `&&` for rendering optional cart badge: `{count > 0 ? <Badge> : null}`
+- `rendering-hoist-jsx`  hoist static JSX in `HeroSection`, `CTABannerSection` outside the component body
+- `rendering-hydration-no-flicker`  pre-seeded animation values in `HeroSection` already correct (no `Math.random()`)
+
+### `vercel-composition-patterns`
+**Apply when:** adding new props to existing components or building new reusable UI pieces.
+Key rules relevant to this project:
+- `architecture-avoid-boolean-props`  instead of `<CourseCard isEnrolled isFeatured />` use composition or explicit variant components
+- `architecture-compound-components`  `cart/page.tsx` and `checkout/page.tsx` could be structured as compound components sharing cart context
+- `state-decouple-implementation`  `useCartStore` is the only place that knows how cart state is managed; components only call actions (already correct)
+- `state-context-interface`  if adding auth or user state, define `{ state, actions, meta }` interface for the store
+- `patterns-explicit-variants`  create `<FeaturedCourseCard>` variant instead of `<CourseCard isFeatured />`
+- `patterns-children-over-render-props`  prefer `children` prop for layout flexibility over `renderHeader={...}` patterns
+- `react19-no-forwardref`  React 19 is in use; skip `forwardRef`, pass `ref` as plain prop
+
+### `web-design-guidelines`
+**Apply when:** asked to "review my UI", "check accessibility", "audit design", or "check UX".
+Process:
+1. Fetch live rules from `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md`
+2. Read the target files
+3. Report findings in `file:line` terse format
+
+Key areas to watch in NexLearn:
+- **Accessibility**: `AddToCartButton` needs `aria-label` when showing icon-only state; filter buttons need `aria-pressed`
+- **Focus states**: all interactive elements need visible `:focus-visible` outlines matching brand colors
+- **Forms**: checkout form inputs need `autocomplete` attributes and proper `<label>` associations
+- **Animation**: Framer Motion `whileInView` animations should respect `prefers-reduced-motion`
+- **Dark Mode**: theming uses `next-themes` with `attribute="class"`  ensure all semantic tokens work in both modes
+- **Images**: all `<Image>` components need non-empty `alt` text; course thumbnails should describe course content

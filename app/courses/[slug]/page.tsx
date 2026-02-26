@@ -18,6 +18,7 @@ import {
 import { RatingStars } from "@/components/shared/RatingStars";
 import { CourseBadge } from "@/components/shared/CourseBadge";
 import { CourseCard } from "@/components/course/CourseCard";
+import { AddToCartButton } from "@/components/course/AddToCartButton";
 import { formatPrice, formatNumber } from "@/lib/utils";
 
 export async function generateStaticParams() {
@@ -324,16 +325,7 @@ function CourseSidebar({
       >
         <Link href="/checkout">Enroll Now</Link>
       </Button>
-      <Button
-        variant="outline"
-        className="w-full h-11 border-border/50 hover:border-primary/50 hover:bg-primary/10"
-        asChild
-      >
-        <Link href="/cart">
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Add to Cart
-        </Link>
-      </Button>
+      <AddToCartButton course={course} />
 
       {/* Money-back */}
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">

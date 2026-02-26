@@ -11,11 +11,13 @@ import { MobileMenu } from "@/components/layout/MobileMenu";
 import { navItems } from "@/config/navigation";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/store/useCartStore";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const pathname = usePathname();
+  const cartCount = useCartStore((s) => s.items.length);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -123,7 +125,7 @@ export function Navbar() {
             <Link href="/cart">
               <ShoppingCart className="h-4 w-4" />
               <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-white flex items-center justify-center">
-                2
+                {cartCount > 0 ? cartCount : null}
               </span>
             </Link>
           </Button>
