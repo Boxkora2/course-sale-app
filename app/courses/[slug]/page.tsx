@@ -25,11 +25,50 @@ export async function generateStaticParams() {
   return courses.map((c) => ({ slug: c.slug }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<import("next").Metadata> {
   const { slug } = await params;
   const course = getCourseBySlug(slug);
   if (!course) return {};
-  return { title: course.title, description: course.subtitle };
+
+  const canonicalUrl = `https://nexlearn.dev/courses/${slug}`;
+  const ogDescription = course.subtitle.length > 155
+    ? course.subtitle.slice(0, 152) + "…"
+    : course.subtitle;
+
+  return {
+    title: course.title,
+    description: ogDescription,
+    keywords: [
+      course.title,
+      course.category,
+      course.instructorName,
+      course.level + " course",
+      ...course.tags,
+      "online course",
+      "NexLearn",
+    ],
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      type: "article",
+      url: canonicalUrl,
+      title: `${course.title} | NexLearn`,
+      description: ogDescription,
+      images: [
+        {
+          url: course.thumbnail,
+          width: 1280,
+          height: 720,
+          alt: `${course.title} — ${course.instructorName}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${course.title} | NexLearn`,
+      description: ogDescription,
+      images: [course.thumbnail],
+    },
+  };
 }
 
 export default async function CourseDetailPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -3,11 +3,15 @@
 // Central site configuration — name, description, URLs, SEO defaults.
 // ─────────────────────────────────────────────────────────────
 
+// ⚠️ Always use the canonical production URL — never process.env.VERCEL_URL
+// which would expose preview deployment URLs to search engines.
+export const BASE_URL = "https://nexlearn.dev";
+
 export const siteConfig = {
   name:        "NexLearn",
   tagline:     "The Future of Learning",
   description: "Expand your skills with cutting-edge courses taught by world-class instructors. Learn at your own pace, on your own terms.",
-  url:         process.env.NEXT_PUBLIC_SITE_URL ?? "https://nexlearn.dev",
+  url:         BASE_URL,
   ogImage:     "/og-image.png",
 
   // Stats displayed in the hero / trust bar

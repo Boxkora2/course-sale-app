@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0a1e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a0a2e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="capGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="50" fill="url(#bgGrad)" />
+  <!-- Graduation cap — board (diamond / rhombus) -->
+  <polygon points="50,18 82,33 50,48 18,33"
+           fill="url(#capGrad)" />
+  <!-- Cap top highlight -->
+  <polygon points="50,18 82,33 50,48 18,33"
+           fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
+  <!-- Left side of cap crown -->
+  <path d="M26 37 L26 55 Q26 62 50 68 Q74 62 74 55 L74 37"
+        fill="none" stroke="url(#capGrad)" stroke-width="3" />
+  <!-- Left tassel string -->
+  <line x1="74" y1="33" x2="74" y2="55" stroke="#06b6d4" stroke-width="3" stroke-linecap="round"/>
+  <!-- Tassel -->
+  <circle cx="74" cy="58" r="5" fill="#06b6d4" />
+  <!-- Tassel fringe -->
+  <line x1="71" y1="63" x2="70" y2="72" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+  <line x1="74" y1="63" x2="74" y2="72" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+  <line x1="77" y1="63" x2="78" y2="72" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+</svg>
